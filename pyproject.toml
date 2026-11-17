@@ -1,0 +1,34 @@
+[project]
+name = "proposer"
+version = "0.1.0"
+description = "Assistants that read and propose but never act: a framework for describing what a pipeline should build"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "httpx>=0.27",
+  "openpyxl>=3.1",     # supplementary .xlsx tables
+  "pydantic>=2.7",
+  "pypdf>=5",          # papers as PDF
+  "pyyaml>=6",
+  "uvicorn>=0.30",
+]
+
+[project.scripts]
+proposer = "proposer.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/proposer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
