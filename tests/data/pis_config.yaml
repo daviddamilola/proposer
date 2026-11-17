@@ -1,0 +1,57 @@
+---
+# A small config in the layout of pis/config.yaml in github.com/opentargets/pipeline
+# (Apache-2.0), for tests: the same sections, banners and quoting, far fewer tasks.
+work_path: ../work
+log_level: DEBUG
+pool_size: 4
+
+scratchpad:
+  efo_version: '3.95.0'
+  ensembl_version: '116'
+  gtex_version: '11'
+  # COSMIC is pinned to the 22.02 vintage on purpose: our licence only allows 22.02.
+  # Do not bump it. See opentargets/issues#4536.
+  cosmic_version: '2022-01-19'
+  reactome_version: '2026-01-19-v95'
+  staging_decode_ts: '20261103T122701'
+
+steps:
+  #: BASELINE_EXPRESSION_RAW STEP :#################################################################
+  baseline_expression_raw:
+    - name: copy GTEx TPM matrix
+      source: https://storage.googleapis.com/adult-gtex/bulk-gex/v${gtex_version}/rna-seq/GTEx_Analysis_v${gtex_version}_gene_tpm.gct.gz
+      destination: input/baseline_expression/bulkRNAseq/GTEx/gene_tpm.gct.gz
+
+    - name: copy GTEx sample attributes
+      source: https://storage.googleapis.com/adult-gtex/annotations/v${gtex_version}/metadata-files/SampleAttributesDS.txt
+      destination: input/baseline_expression/bulkRNAseq/GTEx/sample_attributes.txt
+
+    - name: explode PRIDE proteomics data
+      foreach:
+        - PXD000561
+        - PXD000865
+        - PXD016999
+      do:
+        - name: copy PRIDE ${each} ppb.json
+          source: gs://ot-team/baseline_expression/PRIDE/v${gtex_version}/${each}_ppb.json
+          destination: input/baseline_expression/MSproteomics/PRIDE/${each}/${each}_ppb.json
+  ##################################################################################################
+
+  #: EVIDENCE_COSMIC STEP :#########################################################################
+  # The licence covers one vintage only.
+  evidence_cosmic:
+    - name: copy cosmic evidence
+      source: gs://otar007-cosmic/${cosmic_version}/cosmic.json.gz
+      destination: input/evidence/cosmic/cosmic.json.gz
+  ##################################################################################################
+
+  #: REACTOME STEP :################################################################################
+  reactome:
+    - name: copy reactome pathways
+      source: https://reactome.org/download/current/ReactomePathways.txt
+      destination: input/reactome/ReactomePathways.txt
+
+    - name: copy_many reactome snapshots
+      sources: gs://otar001-core/reactome/${reactome_version}/*.parquet
+      destination: input/reactome/snapshots
+  ##################################################################################################

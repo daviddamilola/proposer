@@ -44,7 +44,7 @@ def signals(text: str) -> list[str]:
     """One-line hints for the model: VCFs, read archives, file types."""
     lines = []
     vcf = len(re.findall(r'\bvcf\b|variant call format', text, re.IGNORECASE))
-    fastq = len(re.findall(r'\bfastq\b|raw reads|sequence read archive|\bsra\b', text, re.IGNORECASE))
+    fastq = len(re.findall(r'\bfastq\b|raw reads|sequence read archive|\bsra\b', text, re.I))
     archives = []
     for match in READ_ARCHIVES.findall(text):
         if match not in archives:
@@ -249,7 +249,8 @@ homozygous true|false."""
                          'required': ['name']}}, 'source': SOURCE}, ['rows', 'source'])),
         ]
 
-    def describe(self, context: dict) -> list[str]:
+    def describe(self, turn: Turn) -> list[str]:
+        context = turn.context
         lines = ['Current wizard step: %s' % (context.get('step') or 'unknown')]
         lines += summarise_form(context.get('form'))
         build = summarise_build(context.get('build'))
@@ -260,7 +261,7 @@ homozygous true|false."""
                 'propose_rename_map (the server works the map out).']
         return lines
 
-    async def start_turn(self, turn: Turn, messages: list) -> None:
+    async def start_turn(self, turn: Turn) -> None:
         """On a turn about a failed build whose fix is a rename map, show the map
         straight away. It is computed from the form (VCF contigs against the
         reference), so it does not depend on the model calling a tool, which
@@ -285,10 +286,9 @@ homozygous true|false."""
             return     # not enough known (e.g. contigs not read yet); the model explains
         await turn.emit('proposal', proposal)
         turn.shown.add('rename-map')
-        messages.append({'role': 'user', 'content': (
-            '[Server note] A rename-map card is already shown to the user: %s Explain the '
-            'error in plain words and point to that card; do not propose another map.'
-            % summary)})
+        turn.notes.append(
+            'A rename-map card is already shown to the user: %s Explain the error in plain '
+            'words and point to that card; do not propose another map.' % summary)
 
 
 def pack(**options) -> Pack:

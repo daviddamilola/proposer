@@ -219,7 +219,8 @@ TABLE_FILE = re.compile(r'\.(xlsx?|csv|tsv|txt)(\.gz)?$|\.zip$', re.IGNORECASE)
 DOI_IN_TEXT = re.compile(r'\b10\.\d{4,9}/[^\s"<>]+', re.IGNORECASE)
 
 
-def pick_paragraphs(paragraphs, budget: int, prefer=None, keywords=KEYWORDS) -> list[tuple[str, str]]:
+def pick_paragraphs(paragraphs, budget: int, prefer=None,
+                    keywords=KEYWORDS) -> list[tuple[str, str]]:
     """Keyword-rich paragraphs within `budget` characters, in document order.
 
     paragraphs: [(label, text)]. `prefer` is a predicate on the label that

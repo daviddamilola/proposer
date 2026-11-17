@@ -8,7 +8,8 @@ thing, by saying:
     how to look at it           read tools (on top of the standard ones)
     what can be proposed        propose tools, each of which validates the
                                 model's values and returns a proposal card
-    what the server knows       start_turn(): cards that need no model
+    what the server knows       start_turn(): state to load, and cards that
+                                need no model
     how a card is applied       apply(), export(): only for clients without a
                                 form of their own (the terminal client)
 
@@ -38,6 +39,7 @@ class Turn:
     emit: Callable                     # async (event, data): to the client
     messages: list = dataclasses.field(default_factory=list)   # the conversation so far
     shown: set = dataclasses.field(default_factory=set)        # kinds of card shown this turn
+    notes: list = dataclasses.field(default_factory=list)      # server notes for the model
     state: dict = dataclasses.field(default_factory=dict)      # scratch space for the pack
 
 
@@ -125,14 +127,16 @@ class Pack:
         """The pack's own tools; the standard read tools are added to them."""
         return []
 
-    def describe(self, context: dict) -> list[str]:
-        """The current state in a few bounded lines, for the system prompt."""
-        return []
-
-    async def start_turn(self, turn: Turn, messages: list) -> None:
+    async def start_turn(self, turn: Turn) -> None:
         """Before the model runs: load what the tools need into turn.state,
         show cards the server can work out by itself (turn.emit('proposal', …),
-        turn.shown.add(kind)), or append a '[Server note] …' user message."""
+        turn.shown.add(kind)), and leave notes for the model in turn.notes.
+        May raise read.ToolError if what is described cannot be loaded."""
+
+    def describe(self, turn: Turn) -> list[str]:
+        """The current state (turn.context, turn.state) in a few bounded lines,
+        for the system prompt. Called after start_turn."""
+        return []
 
     def apply(self, proposal: dict, context: dict) -> str:
         """Apply an accepted proposal to `context`; a line saying what changed.

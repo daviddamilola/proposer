@@ -182,9 +182,9 @@ def principles(pack: Pack) -> str:
     return '\n'.join(parts)
 
 
-def system_prompt(pack: Pack, context: dict, think: bool = False) -> str:
-    parts = [principles(pack)]
-    described = pack.describe(context)
+def system_prompt(turn: Turn, think: bool = False) -> str:
+    parts = [principles(turn.pack)]
+    described = turn.pack.describe(turn)
     if described:
         parts += [''] + described
     return '\n'.join(parts) + llm.prompt_suffix(think)
@@ -276,12 +276,17 @@ async def run_turn(pack: Pack, request: Request, emit):
 
 
 async def _tool_loop(pack: Pack, request: Request, emit):
+    turn = Turn(pack=pack, context=request.context, emit=emit, messages=request.messages)
+    conversation = history(request)
+    try:
+        await pack.start_turn(turn)
+    except read.ToolError as error:
+        raise BadRequest(str(error))
     messages = [{'role': 'system', 'content': system_prompt(
-        pack, request.context, request.think and llm.supports_thinking())}] + \
-        history(request)
+        turn, request.think and llm.supports_thinking())}] + conversation
+    messages += [{'role': 'user', 'content': '[Server note] ' + note} for note in turn.notes]
     tools = toolset(pack)
     schemas = [tool.schema() for tool in tools.values()]
-    turn = Turn(pack=pack, context=request.context, emit=emit, messages=request.messages)
     wrote = {'any': False, 'round': False}
 
     async def on_text(delta):
@@ -297,8 +302,6 @@ async def _tool_loop(pack: Pack, request: Request, emit):
     if think and not llm.supports_thinking():
         await on_think(llm.NO_THINKING_NOTE % llm.model())
         think = False
-
-    await pack.start_turn(turn, messages)
 
     async with llm.client(transport) as http:
         rounds = 0

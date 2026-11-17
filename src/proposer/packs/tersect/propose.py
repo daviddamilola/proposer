@@ -99,7 +99,7 @@ class AccessionsArgs(_Args):
 
 
 # Endings stripped from a VCF file name to get an accession name.
-VCF_ENDING = re.compile(r'(\.(snpeff|ann|filtered|pass))*\.(vcf|bcf)(\.gz|\.bgz)?.*$', re.IGNORECASE)
+VCF_ENDING = re.compile(r'(\.(snpeff|ann|filtered|pass))*\.(vcf|bcf)(\.gz|\.bgz)?.*$', re.I)
 
 
 def _name_from_file(file_name: str, name_regex: re.Pattern | None) -> str:
@@ -177,7 +177,6 @@ def _absolute(url: str, base: str | None) -> str:
 # ----------------------------------------------------------- tools --
 
 async def propose_reference(args: ReferenceArgs, turn):
-    form = turn.context.get('form')
     urls = [u.strip() for u in (args.fasta_url, args.gff_url) if u and u.strip()]
     checks = await _checks(urls)
     payload = {'fasta': None, 'gff': None,
@@ -376,7 +375,6 @@ async def propose_rename_map(args: RenameMapArgs, turn):
 
 
 async def propose_options(args: OptionsArgs, turn):
-    form = turn.context.get('form')
     payload = {'effects': args.effects, 'snpeff_db': (args.snpeff_db or '').strip() or None,
                'types': args.types, 'homozygous': args.homozygous}
     if payload['snpeff_db'] and not payload['effects']:
