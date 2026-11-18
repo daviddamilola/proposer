@@ -189,3 +189,7 @@ Set `PROPOSER_NETWORK_TESTS=1` to also run the few that read real papers.
 
 The engine, the readers and the Tersect pack were extracted from the dataset
 assistant of Tersect Browser.
+
+## Licence
+
+Apache-2.0. See `LICENSE`.

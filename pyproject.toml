@@ -4,6 +4,8 @@ dynamic = ["version"]
 description = "Assistants that read and propose but never act: a framework for describing what a pipeline should build"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "David Oluwasusi" }]
 keywords = ["llm", "agents", "tool-calling", "data-ingestion", "pipelines", "bioinformatics"]
 classifiers = [
