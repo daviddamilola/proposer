@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "David Oluwasusi" }]
+authors = [{ name = "David Oluwasusi", email = "daviddamilola20@gmail.com" }]
 keywords = ["llm", "agents", "tool-calling", "data-ingestion", "pipelines", "bioinformatics"]
 classifiers = [
   "Development Status :: 3 - Alpha",
