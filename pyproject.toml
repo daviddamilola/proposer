@@ -5,7 +5,7 @@ description = "Assistants that read and propose but never act: a framework for d
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "David Oluwasusi", email = "daviddamilola20@gmail.com" }]
 keywords = ["llm", "agents", "tool-calling", "data-ingestion", "pipelines", "bioinformatics"]
 classifiers = [
@@ -50,7 +50,7 @@ build-backend = "hatchling.build"
 path = "src/proposer/__init__.py"
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "README.md", "LICENSE", "CHANGELOG.md", "pyproject.toml"]
+include = ["src", "tests", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/proposer"]

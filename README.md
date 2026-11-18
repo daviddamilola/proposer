@@ -185,11 +185,7 @@ maintainers wrote them, and every edit is verified by parsing the result.
 The tests drive the engine with a scripted fake model and canned URL checks.
 Set `PROPOSER_NETWORK_TESTS=1` to also run the few that read real papers.
 
-## Origin
-
-The engine, the readers and the Tersect pack were extracted from the dataset
-assistant of Tersect Browser.
-
 ## Licence
 
-Apache-2.0. See `LICENSE`.
+Copyright 2026 David Oluwasusi. Licensed under Apache-2.0; see `LICENSE` and
+`NOTICE`.
