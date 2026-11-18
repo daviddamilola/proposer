@@ -10,6 +10,8 @@ thing, by saying:
                                 model's values and returns a proposal card
     what the server knows       start_turn(): state to load, and cards that
                                 need no model
+    which methods are in force  skills(): instructions and extra read tools
+                                (skill.py), pinned by the pack
     how a card is applied       apply(), export(): only for clients without a
                                 form of their own (the terminal client)
 
@@ -41,6 +43,7 @@ class Turn:
     shown: set = dataclasses.field(default_factory=set)        # kinds of card shown this turn
     notes: list = dataclasses.field(default_factory=list)      # server notes for the model
     state: dict = dataclasses.field(default_factory=dict)      # scratch space for the pack
+    skills: list = dataclasses.field(default_factory=list)     # the skills in force
 
 
 @dataclasses.dataclass
@@ -136,6 +139,11 @@ class Pack:
     def describe(self, turn: Turn) -> list[str]:
         """The current state (turn.context, turn.state) in a few bounded lines,
         for the system prompt. Called after start_turn."""
+        return []
+
+    def skills(self, turn: Turn) -> list:
+        """The skills in force this turn (skill.Skill). Called after
+        start_turn, so a pack may pin by state: a wizard step, a failed build."""
         return []
 
     def apply(self, proposal: dict, context: dict) -> str:

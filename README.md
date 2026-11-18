@@ -88,6 +88,54 @@ wrong. `src/proposer/packs/opentargets/` is the shorter of the two examples.
 
 Run a pack of your own with `--pack your.module:factory`.
 
+## Skills
+
+A skill is a method plus the read tools that go with it. When a pack pins one
+(`Pack.skills`), its instructions are added to the prompt and its tools join
+the ones the model may call for that turn.
+
+The pack decides which skills are in force, and may decide by state (a wizard
+step, a failed build). The model never chooses a skill, cannot search for
+tools and cannot run one by name. Skills can only add ways to read: one that
+brings a propose tool is refused, and at most 16 skill tools fit in a turn.
+
+    from proposer.skill import Skill
+
+    class MyPack(Pack):
+        def skills(self, turn):
+            return [Skill('find-the-data', instructions='…', tools=[…])]
+
+### Tools and skills from ToolUniverse
+
+[ToolUniverse](https://github.com/mims-harvard/ToolUniverse) defines a few
+thousand tools over scientific databases, and skills written in terms of them.
+`proposer.sources.tooluniverse` turns the ones a pack names into read tools:
+
+    from proposer.sources.tooluniverse import Catalogue
+
+    catalogue = Catalogue.installed()          # or Catalogue('/path/to/ToolUniverse')
+    tools = catalogue.tools(['Zenodo_search_records', 'Zenodo_get_record_files'])
+    skill = catalogue.skill('tooluniverse-dataset-discovery',     # from a checkout
+                            sections=['search strategy'], limit=8)
+
+Tool types that run code, call other models, start remote compute or write
+files are refused whoever names them. Results are stripped of markup, cut to a
+budget and marked as untrusted text. ToolUniverse's own skill texts are
+written for large models that can search the catalogue and run code, so a
+pack will often take the tools and write the method in its own words.
+
+The Open Targets pack does that. With the extra installed it can find where a
+dataset is published before proposing it:
+
+    uv sync --extra tooluniverse
+    uv run proposer chat --pack opentargets --set tooluniverse=installed
+
+    > The OTRec paper published its disease-target predictions on Zenodo.
+      Find the record and add its data as an input.
+
+The extra is large (about 300 MB installed) and is only needed to run the
+tools; reading the catalogue needs just its JSON files.
+
 ## What the Open Targets pack does and does not do
 
 It proposes:

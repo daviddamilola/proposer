@@ -30,6 +30,7 @@ from .proposal import validation_message
 
 MAX_ROUNDS = 12            # rounds of tool calls per turn
 MAX_CALLS_PER_ROUND = 6
+MAX_SKILL_TOOLS = 16       # read tools that skills may add, in all
 READ_TOOL_TIMEOUT = 90     # seconds per read tool
 PROPOSE_TOOL_TIMEOUT = 180
 HISTORY_MESSAGES = 20
@@ -76,11 +77,29 @@ class Request(BaseModel):
 
 # -------------------------------------------------------------- tools --
 
-def toolset(pack: Pack) -> dict[str, Tool]:
-    """The standard read tools and the pack's own, by name."""
+def toolset(pack: Pack, skills=()) -> dict[str, Tool]:
+    """The tools of a turn, by name: the standard read tools, the pack's own,
+    and the read tools of the skills in force.
+
+    Skills can only add ways to read. One that brings a propose tool, or more
+    tools than MAX_SKILL_TOOLS in all, is a mistake in the pack and is refused
+    outright; a skill tool never replaces a standard or pack tool."""
     tools = {tool.name: tool for tool in standard.tools(pack)}
     for tool in pack.tools():
         tools[tool.name] = tool
+    added = 0
+    for skill in skills:
+        for tool in skill.tools:
+            if tool.proposes:
+                raise ValueError('skill %s brings a propose tool (%s); only the pack may '
+                                 'propose' % (skill.name, tool.name))
+            if tool.name in tools:
+                continue
+            tools[tool.name] = tool
+            added += 1
+    if added > MAX_SKILL_TOOLS:
+        raise ValueError('the skills of pack %s bring %d tools; at most %d fit a small '
+                         "model's prompt" % (pack.name, added, MAX_SKILL_TOOLS))
     return tools
 
 
@@ -171,19 +190,22 @@ CORE_RULES = (
 )
 
 
-def principles(pack: Pack) -> str:
+def principles(pack: Pack, skills=()) -> str:
     parts = ['You are %s. You help a user %s. You never act: you only read and propose '
              'values with the propose_* tools. Proposals appear as cards; the user applies '
              'them, and %s has the final say. You cannot save, run or delete anything.'
              % (pack.role, pack.goal, pack.authority)]
     if pack.brief.strip():
         parts += ['', pack.brief.strip()]
+    for skill in skills:
+        if skill.prompt():
+            parts += ['', skill.prompt()]
     parts += ['', 'Rules:'] + ['- ' + rule for rule in tuple(pack.rules) + CORE_RULES]
     return '\n'.join(parts)
 
 
 def system_prompt(turn: Turn, think: bool = False) -> str:
-    parts = [principles(turn.pack)]
+    parts = [principles(turn.pack, turn.skills)]
     described = turn.pack.describe(turn)
     if described:
         parts += [''] + described
@@ -282,10 +304,11 @@ async def _tool_loop(pack: Pack, request: Request, emit):
         await pack.start_turn(turn)
     except read.ToolError as error:
         raise BadRequest(str(error))
+    turn.skills = list(pack.skills(turn))
+    tools = toolset(pack, turn.skills)
     messages = [{'role': 'system', 'content': system_prompt(
         turn, request.think and llm.supports_thinking())}] + conversation
     messages += [{'role': 'user', 'content': '[Server note] ' + note} for note in turn.notes]
-    tools = toolset(pack)
     schemas = [tool.schema() for tool in tools.values()]
     wrote = {'any': False, 'round': False}
 

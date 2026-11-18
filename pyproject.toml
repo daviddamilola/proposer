@@ -14,6 +14,9 @@ dependencies = [
   "uvicorn>=0.30",
 ]
 
+[project.optional-dependencies]
+tooluniverse = ["tooluniverse"]     # to run ToolUniverse tools pinned by a pack
+
 [project.scripts]
 proposer = "proposer.cli:main"
 

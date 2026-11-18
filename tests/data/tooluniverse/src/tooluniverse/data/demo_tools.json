@@ -1,0 +1,20 @@
+[
+  {"name": "Zenodo_search_records", "type": "ZenodoRESTTool",
+   "description": "Search Zenodo records by keyword.",
+   "parameter": {"type": "object", "properties": {
+     "query": {"type": "string", "description": "Search terms", "default": ""},
+     "limit": {"type": ["integer", "null"], "description": "Results per page"}},
+     "required": ["query"]}},
+  {"name": "Zenodo_get_record_files", "type": "ZenodoRESTTool",
+   "description": "List the files of a Zenodo record with download URLs.",
+   "parameter": {"type": "object", "properties": {"record_id": {"type": "integer"}},
+                 "required": ["record_id"]}},
+  {"name": "biostudies_search", "type": "BioStudiesRESTTool", "description": "Search BioStudies.",
+   "parameter": {"type": "object", "properties": {"query": {"type": "string"}}}},
+  {"name": "biostudies_get_study_files", "type": "BioStudiesRESTTool", "description": "Files of a study.",
+   "parameter": {"type": "object", "properties": {"accession": {"type": "string"}}}},
+  {"name": "DataCite_search_datasets", "type": "DataCiteRESTTool", "description": "Search DataCite.",
+   "parameter": {"type": "object", "properties": {"query": {"type": "string"}}}},
+  {"name": "python_code_executor", "type": "PythonCodeExecutor", "description": "Run Python code.",
+   "parameter": {"type": "object", "properties": {"code": {"type": "string"}}}}
+]
