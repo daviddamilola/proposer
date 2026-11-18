@@ -3,7 +3,7 @@
 [![CI](https://github.com/daviddamilola/proposer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/daviddamilola/proposer/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/proposer-llm)](https://pypi.org/project/proposer-llm/)
 [![Python versions](https://img.shields.io/pypi/pyversions/proposer-llm)](https://pypi.org/project/proposer-llm/)
-[![Licence](https://img.shields.io/pypi/l/proposer-llm)](https://github.com/daviddamilola/proposer/blob/main/LICENSE)
+[![Licence](https://img.shields.io/github/license/daviddamilola/proposer)](https://github.com/daviddamilola/proposer/blob/main/LICENSE)
 
 Assistants that read and propose but never act.
 
