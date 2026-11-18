@@ -22,7 +22,7 @@ import logging
 from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
-from . import engine, llm
+from . import engine, llm, settings
 from .pack import Pack
 
 log = logging.getLogger('proposer')
@@ -88,8 +88,8 @@ def router(pack: Pack) -> APIRouter:
     async def post_assistant(body: engine.Request):
         if not llm.configured():
             raise HTTPException(503, 'The assistant is not configured on this server '
-                                     '(set PROPOSER_URL to an OpenAI-compatible endpoint, '
-                                     'e.g. a local Ollama).')
+                                     '(set %s to an OpenAI-compatible endpoint, '
+                                     'e.g. a local Ollama).' % settings.variable('URL'))
         try:
             engine.history(body)   # 400 before the stream starts
         except engine.BadRequest as error:

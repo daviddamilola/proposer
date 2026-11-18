@@ -18,13 +18,12 @@ the user in the pack's client, where the pack's own validation runs.
 """
 import asyncio
 import json
-import os
 import re
 from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
-from . import llm, net, read, standard
+from . import llm, net, read, settings, standard
 from .pack import Pack, Tool, Turn
 from .proposal import validation_message
 
@@ -47,14 +46,14 @@ class BadRequest(Exception):
 
 def turn_timeout() -> float:
     try:
-        return float(os.environ.get('PROPOSER_TIMEOUT', '') or 600)
+        return float(settings.get('TIMEOUT', '600'))
     except ValueError:
         return 600
 
 
 def context_chars() -> int:
     try:
-        return int(os.environ.get('PROPOSER_CONTEXT_CHARS', '') or 24000)
+        return int(settings.get('CONTEXT_CHARS', '24000'))
     except ValueError:
         return 24000
 

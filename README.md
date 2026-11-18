@@ -176,6 +176,10 @@ maintainers wrote them, and every edit is verified by parsing the result.
 | `PROPOSER_ALLOW_PRIVATE_URLS` | Let the readers reach private addresses | off |
 | `PROPOSER_OPENTARGETS_CONFIG` | Path or URL of `pis/config.yaml` | `main` on GitHub |
 
+An application that embeds proposer can keep its own variable names:
+`settings.alias('MYAPP_ASSISTANT_')` makes `MYAPP_ASSISTANT_URL` stand for
+`PROPOSER_URL`, and so on.
+
 ## Development
 
     uv sync

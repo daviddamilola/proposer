@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
-from ... import read
+from ... import read, settings
 from ...pack import Pack, Tool, Turn
 from ...proposal import SourcedArgs, checks, clip, make, plural, sample_links
 from ...skill import Skill
@@ -477,8 +477,7 @@ of a new kind. Changing a version pin moves every source that uses it."""
 
     def __init__(self, config: str = '', path: str = 'pis/config.yaml',
                  tooluniverse: str = ''):
-        self.location = config or os.environ.get('PROPOSER_OPENTARGETS_CONFIG', '') \
-            or DEFAULT_CONFIG
+        self.location = config or settings.get('OPENTARGETS_CONFIG', DEFAULT_CONFIG)
         self.path = path
         self.pinned = [find_skill(tooluniverse)] if tooluniverse else []
 

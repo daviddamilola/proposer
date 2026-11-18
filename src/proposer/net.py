@@ -7,11 +7,12 @@ hop, unless PROPOSER_ALLOW_PRIVATE_URLS is set (tests, closed networks).
 import asyncio
 import ftplib
 import ipaddress
-import os
 import socket
 from urllib.parse import urlparse
 
 import httpx
+
+from . import settings
 
 USER_AGENT = 'proposer'
 URL_SCHEMES = ('http', 'https', 'ftp')
@@ -19,7 +20,7 @@ URL_TIMEOUT = 10          # seconds, per URL check
 
 
 def private_urls_allowed() -> bool:
-    return os.environ.get('PROPOSER_ALLOW_PRIVATE_URLS', '').lower() in ('1', 'true', 'yes')
+    return settings.get('ALLOW_PRIVATE_URLS').lower() in ('1', 'true', 'yes')
 
 
 def check_addresses(host: str, addresses):

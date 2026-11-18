@@ -17,7 +17,7 @@ import importlib
 import os
 import sys
 
-from . import engine, llm
+from . import engine, llm, settings
 from .pack import Pack
 
 BUILT_IN = ('tersect', 'opentargets')
@@ -129,8 +129,9 @@ def write_out(pack: Pack, context: dict, out: str):
 
 async def chat(args):
     if not llm.configured():
-        raise SystemExit('Set PROPOSER_URL to an OpenAI-compatible endpoint, e.g. '
-                         'http://localhost:11434/v1 for a local Ollama (and PROPOSER_MODEL).')
+        raise SystemExit('Set %s to an OpenAI-compatible endpoint, e.g. '
+                         'http://localhost:11434/v1 for a local Ollama (and %s).'
+                         % (settings.variable('URL'), settings.variable('MODEL')))
     pack = load_pack(args.pack, dict(item.split('=', 1) for item in args.set))
     interactive = sys.stdin.isatty()
     messages, context = [], {}

@@ -13,10 +13,11 @@ out of the content (ThinkFilter). Models that write tool calls as text
 (`<tool_call>{…}</tool_call>`, Qwen and Hermes style) have them parsed.
 """
 import json
-import os
 import re
 
 import httpx
+
+from . import settings
 
 DEFAULT_MODEL = 'qwen3:14b'
 CONNECT_TIMEOUT = 10
@@ -28,11 +29,11 @@ class LLMError(Exception):
 
 
 def base_url() -> str:
-    return os.environ.get('PROPOSER_URL', '').strip().rstrip('/')
+    return settings.get('URL').rstrip('/')
 
 
 def model() -> str:
-    return os.environ.get('PROPOSER_MODEL', '').strip() or DEFAULT_MODEL
+    return settings.get('MODEL', DEFAULT_MODEL)
 
 
 def configured() -> bool:
@@ -41,7 +42,7 @@ def configured() -> bool:
 
 def _headers() -> dict:
     headers = {'Content-Type': 'application/json'}
-    key = os.environ.get('PROPOSER_API_KEY', '').strip()
+    key = settings.get('API_KEY')
     if key:
         headers['Authorization'] = 'Bearer ' + key
     return headers
@@ -178,7 +179,7 @@ _omit_reasoning = False   # set once the endpoint rejected reasoning_effort
 
 
 def _reasoning_setting():
-    value = os.environ.get('PROPOSER_REASONING', 'none').strip()
+    value = settings.get('REASONING', 'none')
     return None if _omit_reasoning or not value or value == 'default' else value
 
 
@@ -203,7 +204,7 @@ def thinking_setting() -> str:
     """reasoning_effort when the user asked to see the reasoning. Ollama turns
     thinking on for any value but "none"; PROPOSER_THINKING_EFFORT changes it."""
     return None if _omit_reasoning else (
-        os.environ.get('PROPOSER_THINKING_EFFORT', '') or 'medium')
+        settings.get('THINKING_EFFORT', 'medium'))
 
 
 def _explain(status: int, body: str) -> str:
@@ -219,12 +220,14 @@ def _explain(status: int, body: str) -> str:
     low = text.lower()
     if 'does not support tools' in low or ('tool' in low and 'not support' in low):
         return ('The model %s does not support tool calling, which the assistant needs. '
-                'Set PROPOSER_MODEL to one that does (for example qwen3:8b).' % model())
+                'Set %s to one that does (for example qwen3:8b).'
+                % (model(), settings.variable('MODEL')))
     if status == 404 or ('model' in low and 'not found' in low):
         return ('The model %s was not found on the assistant server (%s). Pull it first, '
                 'e.g. `ollama pull %s`.' % (model(), text, model()))
     if status in (401, 403):
-        return 'The assistant server refused the request (%d): check PROPOSER_API_KEY.' % status
+        return 'The assistant server refused the request (%d): check %s.' % (
+            status, settings.variable('API_KEY'))
     return 'The assistant server returned an error (%d): %s' % (status, text)
 
 

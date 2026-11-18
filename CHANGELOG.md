@@ -10,3 +10,4 @@ First release.
 - Skills pinned by a pack, and ToolUniverse as an optional source of read
   tools and skills (`proposer-llm[tooluniverse]`).
 - `proposer chat` and `proposer serve`.
+- Settings under an embedding application's own variable names (`settings.alias`).

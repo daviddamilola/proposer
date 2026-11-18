@@ -1,0 +1,27 @@
+# Publishes the current version to TestPyPI, to try a release before the real
+# one. Run it by hand from the Actions tab.
+#
+# Uses trusted publishing. Set it up once at
+# https://test.pypi.org/manage/account/publishing/ (project: proposer-llm,
+# owner: daviddamilola, repository: proposer, workflow: test-release.yml,
+# environment: testpypi).
+name: Test release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - run: uv run pytest -q
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
