@@ -1,0 +1,39 @@
+# Publishes to PyPI when a GitHub release is published.
+#
+# Uses PyPI trusted publishing, so no token is stored here. Set it up once at
+# https://pypi.org/manage/account/publishing/ (project: proposer-llm, owner:
+# daviddamilola, repository: proposer, workflow: release.yml, environment: pypi).
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - run: uv run pytest -q
+      - name: The tag must match the package version
+        run: test "v$(uv run python -c 'import proposer; print(proposer.__version__)')" = "${{ github.event.release.tag_name }}"
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

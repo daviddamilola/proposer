@@ -28,17 +28,22 @@ one thing.
 | `tersect` | A genomics dataset for [Tersect Browser](https://github.com/Tersect-Browser/Tersect-browser): reference genome, one VCF per accession, build options | The dataset wizard's form |
 | `opentargets` | New inputs for the [Open Targets pipeline](https://github.com/opentargets/pipeline): `copy` tasks and version pins in `pis/config.yaml` | A maintainer reviewing a patch |
 
+## Install
+
+    pip install proposer-llm
+
+The package is published as `proposer-llm`; it is imported as `proposer` and
+its command is `proposer`. It needs Python 3.11 or later.
+
 ## Try it
 
-You need [uv](https://docs.astral.sh/uv/) and an OpenAI-compatible model
-endpoint that supports tool calling, for example a local
-[Ollama](https://ollama.com):
+You need an OpenAI-compatible model endpoint that supports tool calling, for
+example a local [Ollama](https://ollama.com):
 
-    uv sync
     export PROPOSER_URL=http://localhost:11434/v1
     export PROPOSER_MODEL=qwen3:14b
 
-    uv run proposer chat --pack opentargets
+    proposer chat --pack opentargets
 
 Then describe what you want added:
 
@@ -63,7 +68,7 @@ with `--set config=/path/to/pipeline/pis/config.yaml`.
 
 To serve a pack over HTTP for a web client (server-sent events):
 
-    uv run proposer serve --pack tersect
+    proposer serve --pack tersect
 
 ## Writing a pack
 
@@ -127,8 +132,8 @@ pack will often take the tools and write the method in its own words.
 The Open Targets pack does that. With the extra installed it can find where a
 dataset is published before proposing it:
 
-    uv sync --extra tooluniverse
-    uv run proposer chat --pack opentargets --set tooluniverse=installed
+    pip install "proposer-llm[tooluniverse]"
+    proposer chat --pack opentargets --set tooluniverse=installed
 
     > The OTRec paper published its disease-target predictions on Zenodo.
       Find the record and add its data as an input.
@@ -173,6 +178,7 @@ maintainers wrote them, and every edit is verified by parsing the result.
 
 ## Development
 
+    uv sync
     uv run pytest          # no network or model needed
     uv run ruff check .
 

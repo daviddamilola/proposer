@@ -21,7 +21,7 @@ assistant that only reads and proposes may do:
   untrusted, like the text of a paper.
 
 Reading the catalogue needs only its JSON files. Running a tool needs the
-`tooluniverse` package (the `tooluniverse` extra of this project).
+`tooluniverse` package (`pip install "proposer-llm[tooluniverse]"`).
 """
 import asyncio
 import glob
@@ -91,7 +91,7 @@ class Catalogue:
         spec = importlib.util.find_spec('tooluniverse')
         if spec is None or not spec.submodule_search_locations:
             raise ValueError('the tooluniverse package is not installed '
-                             '(install proposer with the tooluniverse extra)')
+                             '(pip install "proposer-llm[tooluniverse]")')
         return cls(os.path.join(list(spec.submodule_search_locations)[0], 'data'), run)
 
     # ------------------------------------------------------------ tools --

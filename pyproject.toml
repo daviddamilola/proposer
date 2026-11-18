@@ -1,9 +1,22 @@
 [project]
-name = "proposer"
-version = "0.1.0"
+name = "proposer-llm"
+dynamic = ["version"]
 description = "Assistants that read and propose but never act: a framework for describing what a pipeline should build"
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [{ name = "David Oluwasusi" }]
+keywords = ["llm", "agents", "tool-calling", "data-ingestion", "pipelines", "bioinformatics"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries",
+]
 dependencies = [
   "fastapi>=0.115",
   "httpx>=0.27",
@@ -17,6 +30,10 @@ dependencies = [
 [project.optional-dependencies]
 tooluniverse = ["tooluniverse"]     # to run ToolUniverse tools pinned by a pack
 
+[project.urls]
+Repository = "https://github.com/daviddamilola/proposer"
+Issues = "https://github.com/daviddamilola/proposer/issues"
+
 [project.scripts]
 proposer = "proposer.cli:main"
 
@@ -26,6 +43,12 @@ dev = ["pytest>=8", "ruff>=0.6"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/proposer/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE", "CHANGELOG.md", "pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/proposer"]
