@@ -1,4 +1,8 @@
-"""Tersect pack: describing a genomics dataset for Tersect Browser.
+"""A pack for the tests: describing a genomics dataset for Tersect Browser.
+
+Not part of the package. It is a frozen copy of the pack that Tersect Browser
+keeps in its own repository (pipeline/tbpipeline/assistant_pack), here so
+that the engine is tested through a pack with real read and propose tools.
 
 The thing described is the wizard form of the dataset builder: a reference
 genome (FASTA, optional GFF3), one VCF per accession, and build options. The
@@ -10,9 +14,9 @@ and applies accepted cards to the form itself, so apply() is not implemented.
 """
 import re
 
-from ... import read
-from ...pack import Pack, Tool, Turn
-from ...proposal import clip
+from proposer import read
+from proposer.pack import Pack, Tool, Turn
+from proposer.proposal import clip
 from . import propose
 
 S = {'type': 'string'}

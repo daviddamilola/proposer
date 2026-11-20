@@ -11,7 +11,7 @@ from proposer.pack import Pack, Tool
 from proposer.packs import opentargets
 from proposer.proposal import SourcedArgs
 from proposer.sources import tooluniverse
-from test_tersect import FakeModel, call, events_of, proposals, text_reply, texts, tool_reply
+from test_engine import FakeModel, call, events_of, proposals, text_reply, texts, tool_reply
 
 HERE = os.path.dirname(__file__)
 ROOT = os.path.join(HERE, 'data', 'tooluniverse')

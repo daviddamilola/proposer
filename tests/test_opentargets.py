@@ -8,7 +8,7 @@ import pytest
 import yaml
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from test_tersect import FakeModel, call, events_of, proposals, text_reply, texts, tool_reply
+from test_engine import FakeModel, call, events_of, proposals, text_reply, texts, tool_reply
 
 from proposer import engine, llm, net, server
 from proposer.packs import opentargets

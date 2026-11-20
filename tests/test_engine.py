@@ -1,4 +1,4 @@
-"""The Tersect pack, and through it the engine, against a fake OpenAI-compatible model.
+"""The engine, through the tests' dataset pack (tests/dataset_pack), against a fake OpenAI-compatible model.
 
 The model is an httpx.MockTransport that serves scripted streamed responses
 (text deltas and tool calls) and records what it was sent. Document fetches
@@ -16,10 +16,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from proposer import engine, llm, net, read, server
-from proposer.packs import tersect
-from proposer.packs.tersect import propose
+import dataset_pack
+from dataset_pack import propose
 
-PACK = tersect.pack()
+PACK = dataset_pack.pack()
 
 network = pytest.mark.skipif(not os.environ.get('PROPOSER_NETWORK_TESTS'),
                              reason='set PROPOSER_NETWORK_TESTS=1 to read real papers')
@@ -652,9 +652,9 @@ def test_unreachable_links_in_the_answer_are_flagged(run, web):
 
 
 def test_reads_only_papers_get_a_verdict():
-    lines = tersect.signals('Reads were deposited as FASTQ in ENA (PRJEB6180).')
+    lines = dataset_pack.signals('Reads were deposited as FASTQ in ENA (PRJEB6180).')
     assert lines[0].startswith('VERDICT: this paper appears to publish raw reads only')
-    assert not tersect.signals('Variants are provided as VCF files.')[0].startswith('VERDICT')
+    assert not dataset_pack.signals('Variants are provided as VCF files.')[0].startswith('VERDICT')
 
 
 def test_model_without_thinking_answers_anyway(run, monkeypatch):

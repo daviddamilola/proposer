@@ -14,14 +14,14 @@ from urllib.parse import unquote, urljoin, urlparse
 
 from pydantic import BaseModel, Field
 
-from ... import net
-from ...proposal import SourcedArgs as _Args
-from ...proposal import checks as _checks
-from ...proposal import clip as _clip
-from ...proposal import make as _proposal
-from ...proposal import plural as _plural
-from ...proposal import sample_links as _sample_links
-from ...read import ToolError, list_entries
+from proposer import net
+from proposer.proposal import SourcedArgs as _Args
+from proposer.proposal import checks as _checks
+from proposer.proposal import clip as _clip
+from proposer.proposal import make as _proposal
+from proposer.proposal import plural as _plural
+from proposer.proposal import sample_links as _sample_links
+from proposer.read import ToolError, list_entries
 
 NAME_PATTERN = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$')
 MAX_ROWS = 1000

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from proposer import engine, llm, net, server, settings
-from proposer.packs import tersect
+import dataset_pack
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def test_aliases(monkeypatch):
         'APP_ALLOW_PRIVATE', 'APP_ASSISTANT_ALLOW_PRIVATE_URLS', 'PROPOSER_ALLOW_PRIVATE_URLS']
     # Messages name the variable the application's operators know.
     app = FastAPI()
-    app.include_router(server.router(tersect.pack()), prefix='/api')
+    app.include_router(server.router(dataset_pack.pack()), prefix='/api')
     response = TestClient(app).post('/api/assistant', json={
         'messages': [{'role': 'user', 'content': 'hi'}]})
     assert response.status_code == 503 and 'APP_ASSISTANT_URL' in response.json()['detail']
