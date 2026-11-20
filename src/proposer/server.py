@@ -34,7 +34,7 @@ def sse(event: str, data) -> str:
     return 'event: %s\ndata: %s\n\n' % (event, json.dumps(data, separators=(',', ':')))
 
 
-async def event_stream(pack: Pack, request: engine.Request):
+async def event_stream(pack: Pack, request: engine.Request, backend=None):
     queue: asyncio.Queue = asyncio.Queue()
     END = object()
 
@@ -44,7 +44,7 @@ async def event_stream(pack: Pack, request: engine.Request):
     async def produce():
         try:
             async with asyncio.timeout(engine.turn_timeout()):
-                await engine.run_turn(pack, request, emit)
+                await engine.run_turn(pack, request, emit, backend)
             await emit('done', {})
         except (llm.LLMError, engine.BadRequest) as error:
             await emit('error', {'message': str(error)})
@@ -76,32 +76,38 @@ async def event_stream(pack: Pack, request: engine.Request):
             task.cancel()   # the client went away
 
 
-def router(pack: Pack) -> APIRouter:
+def router(pack: Pack, backend=None) -> APIRouter:
+    """The routes for one pack on one backend (llm, the default, or claude).
+    An application that picks the backend per request, say by who is asking,
+    writes its own route around event_stream()."""
     api = APIRouter()
+    model = backend or llm
 
     @api.get('/assistant/info')
     def info():
-        return {'pack': pack.name, 'configured': llm.configured(),
-                'model': llm.model() if llm.configured() else None}
+        return {'pack': pack.name, 'configured': model.configured(),
+                'model': model.model() if model.configured() else None}
 
     @api.post('/assistant')
     async def post_assistant(body: engine.Request):
-        if not llm.configured():
+        if not model.configured():
             raise HTTPException(503, 'The assistant is not configured on this server '
                                      '(set %s to an OpenAI-compatible endpoint, '
-                                     'e.g. a local Ollama).' % settings.variable('URL'))
+                                     'e.g. a local Ollama, or %s for Claude).'
+                                % (settings.variable('URL'),
+                                   settings.variable('CLAUDE_API_KEY')))
         try:
             engine.history(body)   # 400 before the stream starts
         except engine.BadRequest as error:
             raise HTTPException(400, str(error))
-        return StreamingResponse(event_stream(pack, body), media_type='text/event-stream',
+        return StreamingResponse(event_stream(pack, body, backend), media_type='text/event-stream',
                                  headers={'Cache-Control': 'no-cache',
                                           'X-Accel-Buffering': 'no'})
 
     return api
 
 
-def create_app(pack: Pack) -> FastAPI:
+def create_app(pack: Pack, backend=None) -> FastAPI:
     app = FastAPI(title='proposer: %s' % pack.name)
-    app.include_router(router(pack), prefix='/api')
+    app.include_router(router(pack, backend), prefix='/api')
     return app

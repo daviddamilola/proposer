@@ -1,15 +1,16 @@
 """Terminal client.
 
     proposer chat  --pack opentargets [--set config=pis/config.yaml] [--out DIR] [message]
-    proposer serve --pack tersect [--port 8000]
+    proposer serve --pack opentargets [--port 8000]
 
 chat runs turns in the terminal. Each proposal is printed as a card; for packs
 that can apply cards (Pack.apply) you are asked whether to accept it, and what
 you accepted is written to --out when you leave. With a message and no
 terminal on stdin it runs that one turn and accepts nothing.
 
-A pack is a built-in name (tersect, opentargets) or module:function, where the
-function returns a Pack; --set key=value passes options to it.
+A pack is a built-in name (opentargets) or module:function, where the function
+returns a Pack (a pack kept in its own project, e.g.
+tbpipeline.assistant_pack:pack); --set key=value passes options to it.
 """
 import argparse
 import asyncio
@@ -20,7 +21,7 @@ import sys
 from . import engine, llm, settings
 from .pack import Pack
 
-BUILT_IN = ('tersect', 'opentargets')
+BUILT_IN = ('opentargets',)
 
 
 def load_pack(name: str, options: dict) -> Pack:
@@ -63,7 +64,8 @@ def card(proposal: dict, number: int) -> str:
     return '\n'.join(lines)
 
 
-async def turn(pack: Pack, messages: list, context: dict, think: bool) -> tuple[str, list]:
+async def turn(pack: Pack, messages: list, context: dict, think: bool,
+               backend=None) -> tuple[str, list]:
     """Run one turn, printing as it goes; the answer text and the proposals."""
     said, proposals = [], []
     line_open = {'text': False}
@@ -88,7 +90,7 @@ async def turn(pack: Pack, messages: list, context: dict, think: bool) -> tuple[
     request = engine.Request(messages=messages, context=context, think=think)
     request.context = context      # the pack's working state lives across turns
     async with asyncio.timeout(engine.turn_timeout()):
-        await engine.run_turn(pack, request, emit)
+        await engine.run_turn(pack, request, emit, backend)
     if line_open['text']:
         print()
     return ''.join(said), proposals
@@ -127,11 +129,27 @@ def write_out(pack: Pack, context: dict, out: str):
         print('Wrote %s' % path)
 
 
+def backend_of(args):
+    """The model client the command asked for; exits if it is not set up."""
+    if not args.claude:
+        if not llm.configured():
+            raise SystemExit('Set %s to an OpenAI-compatible endpoint, e.g. '
+                             'http://localhost:11434/v1 for a local Ollama (and %s), '
+                             'or pass --claude.'
+                             % (settings.variable('URL'), settings.variable('MODEL')))
+        return llm
+    from . import claude
+    if not claude.installed():
+        raise SystemExit('--claude needs the anthropic package: '
+                         'pip install "proposer-llm[claude]"')
+    if not claude.configured():
+        raise SystemExit('Set %s (or ANTHROPIC_API_KEY) to use Claude.'
+                         % settings.variable('CLAUDE_API_KEY'))
+    return claude
+
+
 async def chat(args):
-    if not llm.configured():
-        raise SystemExit('Set %s to an OpenAI-compatible endpoint, e.g. '
-                         'http://localhost:11434/v1 for a local Ollama (and %s).'
-                         % (settings.variable('URL'), settings.variable('MODEL')))
+    backend = backend_of(args)
     pack = load_pack(args.pack, dict(item.split('=', 1) for item in args.set))
     interactive = sys.stdin.isatty()
     messages, context = [], {}
@@ -146,7 +164,7 @@ async def chat(args):
                 break
             messages.append({'role': 'user', 'content': text})
             try:
-                answer, proposals = await turn(pack, messages, context, args.think)
+                answer, proposals = await turn(pack, messages, context, args.think, backend)
             except (llm.LLMError, engine.BadRequest) as error:
                 print('Error: %s' % error, file=sys.stderr)
                 messages.pop()
@@ -168,7 +186,7 @@ def serve(args):
 
     from .server import create_app
     pack = load_pack(args.pack, dict(item.split('=', 1) for item in args.set))
-    uvicorn.run(create_app(pack), host=args.host, port=args.port)
+    uvicorn.run(create_app(pack, backend_of(args)), host=args.host, port=args.port)
 
 
 def main(argv=None):
@@ -178,6 +196,9 @@ def main(argv=None):
         command = commands.add_parser(name)
         command.add_argument('--pack', required=True,
                              help='built-in name (%s) or module:function' % ', '.join(BUILT_IN))
+        command.add_argument('--claude', action='store_true',
+                             help='use the Claude API instead of a local endpoint; the '
+                                  'conversation and what the tools read go to Anthropic')
         command.add_argument('--set', action='append', default=[], metavar='KEY=VALUE',
                              help='option for the pack; may be repeated')
         if name == 'chat':

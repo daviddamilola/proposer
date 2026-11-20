@@ -203,12 +203,12 @@ def principles(pack: Pack, skills=()) -> str:
     return '\n'.join(parts)
 
 
-def system_prompt(turn: Turn, think: bool = False) -> str:
+def system_prompt(turn: Turn, think: bool = False, backend=llm) -> str:
     parts = [principles(turn.pack, turn.skills)]
     described = turn.pack.describe(turn)
     if described:
         parts += [''] + described
-    return '\n'.join(parts) + llm.prompt_suffix(think)
+    return '\n'.join(parts) + backend.prompt_suffix(think)
 
 
 # ------------------------------------------------------- context size --
@@ -282,9 +282,12 @@ async def check_answer_links(text: str, emit):
                             'and may be wrong: %s' % ', '.join('`%s`' % u for u in bad)})
 
 
-async def run_turn(pack: Pack, request: Request, emit):
+async def run_turn(pack: Pack, request: Request, emit, backend=None):
     """One user turn: the tool loop, then a check of links in the answer text.
-    Raises llm.LLMError on endpoint problems and BadRequest on a bad request."""
+    Raises llm.LLMError on endpoint problems and BadRequest on a bad request.
+
+    `backend` is the model client: llm (an OpenAI-compatible endpoint, the
+    default) or claude, or any module with their interface."""
     said: list[str] = []
 
     async def emit_and_keep(event, data):
@@ -292,11 +295,11 @@ async def run_turn(pack: Pack, request: Request, emit):
             said.append(data['delta'])
         await emit(event, data)
 
-    await _tool_loop(pack, request, emit_and_keep)
+    await _tool_loop(pack, request, emit_and_keep, backend or llm)
     await check_answer_links(''.join(said), emit)
 
 
-async def _tool_loop(pack: Pack, request: Request, emit):
+async def _tool_loop(pack: Pack, request: Request, emit, backend=llm):
     turn = Turn(pack=pack, context=request.context, emit=emit, messages=request.messages)
     conversation = history(request)
     try:
@@ -306,7 +309,7 @@ async def _tool_loop(pack: Pack, request: Request, emit):
     turn.skills = list(pack.skills(turn))
     tools = toolset(pack, turn.skills)
     messages = [{'role': 'system', 'content': system_prompt(
-        turn, request.think and llm.supports_thinking())}] + conversation
+        turn, request.think and backend.supports_thinking(), backend)}] + conversation
     messages += [{'role': 'user', 'content': '[Server note] ' + note} for note in turn.notes]
     schemas = [tool.schema() for tool in tools.values()]
     wrote = {'any': False, 'round': False}
@@ -321,11 +324,13 @@ async def _tool_loop(pack: Pack, request: Request, emit):
         await emit('thinking', {'delta': delta})
 
     think = request.think
-    if think and not llm.supports_thinking():
-        await on_think(llm.NO_THINKING_NOTE % llm.model())
+    if think and not backend.supports_thinking():
+        await on_think(llm.NO_THINKING_NOTE % backend.model())
         think = False
+    # A backend may bring its own prompt budget (claude: far larger).
+    budget = getattr(backend, 'context_chars', context_chars)
 
-    async with llm.client(transport) as http:
+    async with backend.client(transport) as http:
         rounds = 0
         await emit('status', {'text': 'Thinking…'})
         while True:
@@ -334,10 +339,11 @@ async def _tool_loop(pack: Pack, request: Request, emit):
                 messages.append({'role': 'user', 'content': (
                     '[Server note] The tool limit for this turn is reached. Answer now with '
                     'what you have, and say what is still unknown.')})
-            fit(messages, context_chars())
+            fit(messages, budget())
             wrote['round'] = False
-            result = await llm.stream_chat(http, messages, None if last else schemas,
-                                           on_text, on_think=on_think if think else None)
+            result = await backend.stream_chat(http, messages, schemas, on_text,
+                                               on_think=on_think if think else None,
+                                               final=last)
             calls = result['tool_calls']
             if not calls or last:
                 if not wrote['any']:
@@ -345,8 +351,12 @@ async def _tool_loop(pack: Pack, request: Request, emit):
                 return
             rounds += 1
             calls = calls[:MAX_CALLS_PER_ROUND] if len(calls) > MAX_CALLS_PER_ROUND else calls
-            messages.append({'role': 'assistant', 'content': result['content'] or '',
-                             'tool_calls': calls})
+            said = {'role': 'assistant', 'content': result['content'] or '',
+                    'tool_calls': calls}
+            if result.get('native'):
+                # The backend's own form of this message, sent back as it came.
+                said['native'] = result['native']
+            messages.append(said)
             for call in calls:
                 content = await execute(call, turn, tools)
                 messages.append({'role': 'tool', 'tool_call_id': call['id'],

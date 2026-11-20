@@ -30,6 +30,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+claude = ["anthropic>=2.11"]        # the Claude API as the model (claude.py)
 tooluniverse = ["tooluniverse"]     # to run ToolUniverse tools pinned by a pack
 
 [project.urls]
@@ -40,7 +41,7 @@ Issues = "https://github.com/daviddamilola/proposer/issues"
 proposer = "proposer.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["pytest>=8", "ruff>=0.6", "anthropic>=2.11"]
 
 [build-system]
 requires = ["hatchling"]

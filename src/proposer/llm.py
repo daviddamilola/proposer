@@ -232,17 +232,19 @@ def _explain(status: int, body: str) -> str:
 
 
 async def stream_chat(http: httpx.AsyncClient, messages: list[dict], tools: list[dict] | None,
-                      on_text, temperature: float = 0.3, on_think=None) -> dict:
+                      on_text, temperature: float = 0.3, on_think=None,
+                      final: bool = False) -> dict:
     """One streamed completion. Calls on_text(delta) with visible text, and,
     when on_think is given, asks the model to reason first and calls
     on_think(delta) with its reasoning (never part of the returned content).
+    `final`: the turn's last round, in which the model gets no tools.
 
     Returns {'content': visible text, 'tool_calls': [...], 'finish_reason': ...}.
     """
     global _omit_reasoning
     body = {'model': model(), 'messages': messages, 'stream': True,
             'temperature': temperature}
-    if tools:
+    if tools and not final:
         body['tools'] = tools
         body['tool_choice'] = 'auto'
     reasoning = thinking_setting() if on_think else _reasoning_setting()
@@ -258,12 +260,13 @@ async def stream_chat(http: httpx.AsyncClient, messages: list[dict], tools: list
                     # The model cannot reason: say so once, answer without.
                     _no_thinking.add(model())
                     await on_think(NO_THINKING_NOTE % model())
-                    return await stream_chat(http, messages, tools, on_text, temperature)
+                    return await stream_chat(http, messages, tools, on_text, temperature,
+                                             final=final)
                 if reasoning and response.status_code in (400, 422) and \
                         'reasoning' in text.lower():
                     _omit_reasoning = True
                     return await stream_chat(http, messages, tools, on_text, temperature,
-                                             on_think)
+                                             on_think, final)
                 raise LLMError(_explain(response.status_code, text))
             return await _read_stream(response, on_text, on_think)
     except httpx.ConnectError:
