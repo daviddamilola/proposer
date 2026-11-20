@@ -30,12 +30,20 @@ one thing.
 
 | Pack | Describes | A proposal is applied by |
 |---|---|---|
-| `tersect` | A genomics dataset for [Tersect Browser](https://github.com/Tersect-Browser/Tersect-browser): reference genome, one VCF per accession, build options | The dataset wizard's form |
 | `opentargets` | New inputs for the [Open Targets pipeline](https://github.com/opentargets/pipeline): `copy` tasks and version pins in `pis/config.yaml` | A maintainer reviewing a patch |
+
+`opentargets` ships with the package as the worked example. A pack belongs
+with the thing it describes, maintained by the people who maintain that:
+[Tersect Browser](https://github.com/Tersect-Browser/Tersect-browser) keeps
+its pack in its own repository (`pipeline/tbpipeline/assistant_pack`), where
+it describes a genomics dataset (reference genome, one VCF per accession,
+build options) and proposals are applied by the dataset wizard's form. Any
+installed pack is used by its import path: `--pack mypackage.assistant:pack`.
 
 ## Install
 
     pip install proposer-llm
+    pip install "proposer-llm[claude]"     # to use the Claude API as the model
 
 The package is published as `proposer-llm`; it is imported as `proposer` and
 its command is `proposer`. It needs Python 3.11 or later.
@@ -73,7 +81,7 @@ with `--set config=/path/to/pipeline/pis/config.yaml`.
 
 To serve a pack over HTTP for a web client (server-sent events):
 
-    proposer serve --pack tersect
+    proposer serve --pack opentargets
 
 ## Writing a pack
 
@@ -180,6 +188,25 @@ maintainers wrote them, and every edit is verified by parsing the result.
 | `PROPOSER_REASONING` | `reasoning_effort` sent by default | `none` |
 | `PROPOSER_ALLOW_PRIVATE_URLS` | Let the readers reach private addresses | off |
 | `PROPOSER_OPENTARGETS_CONFIG` | Path or URL of `pis/config.yaml` | `main` on GitHub |
+
+### Claude instead of a local model
+
+Where no local model can run, the Claude API can stand in: `proposer chat
+--claude` and `proposer serve --claude`, or `backend=claude` in code
+(`server.router(pack, claude)`, `engine.run_turn(pack, request, emit,
+claude)`). The conversation and whatever the read tools return (paper text,
+file names, table rows) are then sent to Anthropic, and each turn is billed
+to the key, so an application should decide who may use it: write your own
+route around `server.event_stream(pack, request, backend)` and pick the
+backend per request.
+
+| Variable | Meaning | Default |
+|---|---|---|
+| `PROPOSER_CLAUDE_API_KEY` | Anthropic API key | `ANTHROPIC_API_KEY` |
+| `PROPOSER_CLAUDE_MODEL` | Model | `claude-haiku-5-5` |
+| `PROPOSER_CLAUDE_EFFORT` | `low` to `max` | the model's own |
+| `PROPOSER_CLAUDE_MAX_TOKENS` | Per model response | `16000` |
+| `PROPOSER_CLAUDE_CONTEXT_CHARS` | Prompt budget in characters | `300000` |
 
 An application that embeds proposer can keep its own variable names:
 `settings.alias('MYAPP_ASSISTANT_')` makes `MYAPP_ASSISTANT_URL` stand for
